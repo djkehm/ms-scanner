@@ -1,10 +1,17 @@
 import { useState, useMemo } from "react";
 import { useStore, useHydrated } from "../store";
-import { Card, Pagination } from "@heroui/react";
+import { Card, Pagination, SearchField, Select, ListBox } from "@heroui/react";
 import ServerCard, { ServerCardSkeleton } from "../components/server-card";
-import { Heart } from "lucide-react";
+import { Heart, Search } from "lucide-react";
+import type { Key } from "react-aria-components";
 
 const PAGE_SIZE = 12;
+
+type SortOption = "newest" | "oldest" | "players-desc" | "players-asc";
+
+function stripMinecraftCodes(text: string): string {
+  return text.replace(/§[0-9a-fk-or]/gi, "");
+}
 
 export function meta() {
   return [
@@ -17,17 +24,55 @@ export default function Favorites() {
   const isHydrated = useHydrated();
   const { favorites } = useStore();
   const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<Key>("newest");
 
-  const totalPages = Math.max(1, Math.ceil(favorites.length / PAGE_SIZE));
+  const filteredFavorites = useMemo(() => {
+    let filtered = [...favorites];
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (s) =>
+          s.ip.toLowerCase().includes(q) ||
+          s.port.toString().includes(q) ||
+          (s.motd && stripMinecraftCodes(s.motd).toLowerCase().includes(q)),
+      );
+    }
+
+    return filtered.sort((a, b) => {
+      switch (sortOrder) {
+        case "newest":
+          return (
+            new Date(b.scannedAt).getTime() - new Date(a.scannedAt).getTime()
+          );
+        case "oldest":
+          return (
+            new Date(a.scannedAt).getTime() - new Date(b.scannedAt).getTime()
+          );
+        case "players-desc":
+          return (b.playersOnline || 0) - (a.playersOnline || 0);
+        case "players-asc":
+          return (a.playersOnline || 0) - (b.playersOnline || 0);
+        default:
+          return 0;
+      }
+    });
+  }, [favorites, searchQuery, sortOrder]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredFavorites.length / PAGE_SIZE),
+  );
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
 
   const paginatedFavorites = useMemo(() => {
     const start = (page - 1) * PAGE_SIZE;
-    return favorites.slice(start, start + PAGE_SIZE);
-  }, [favorites, page]);
+    return filteredFavorites.slice(start, start + PAGE_SIZE);
+  }, [filteredFavorites, page]);
 
   const start = (page - 1) * PAGE_SIZE + 1;
-  const end = Math.min(page * PAGE_SIZE, favorites.length);
+  const end = Math.min(page * PAGE_SIZE, filteredFavorites.length);
 
   if (!isHydrated) {
     return (
@@ -53,13 +98,69 @@ export default function Favorites() {
         </p>
       </div>
 
-      {favorites.length === 0 ? (
+      <div className="flex flex-col sm:flex-row gap-4 items-center mb-6">
+        <SearchField
+          className="w-full sm:w-80"
+          value={searchQuery}
+          onChange={(val) => {
+            setSearchQuery(val);
+            setPage(1);
+          }}
+          aria-label="Search favorites"
+        >
+          <SearchField.Group>
+            <SearchField.SearchIcon>
+              <Search className="w-4 h-4" />
+            </SearchField.SearchIcon>
+            <SearchField.Input placeholder="Search IP, motd..." />
+            <SearchField.ClearButton />
+          </SearchField.Group>
+        </SearchField>
+
+        <Select
+          className="w-full sm:w-48 ml-auto"
+          aria-label="Sort by"
+          selectedKey={sortOrder}
+          onSelectionChange={(key) => setSortOrder(key || "newest")}
+        >
+          <Select.Trigger>
+            <Select.Value />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              <ListBox.Item id="newest" textValue="Newest">
+                Newest Added
+              </ListBox.Item>
+              <ListBox.Item id="oldest" textValue="Oldest">
+                Oldest Added
+              </ListBox.Item>
+              <ListBox.Item id="players-desc" textValue="Most Players">
+                Most Players
+              </ListBox.Item>
+              <ListBox.Item id="players-asc" textValue="Least Players">
+                Least Players
+              </ListBox.Item>
+            </ListBox>
+          </Select.Popover>
+        </Select>
+      </div>
+
+      {filteredFavorites.length === 0 && !searchQuery ? (
         <Card>
           <Card.Content className="text-center py-12">
             <Heart className="w-10 h-10 text-muted mx-auto mb-3 opacity-30" />
             <p className="text-muted text-sm">
               No favorites yet. Scan servers and click the heart icon to save
               them.
+            </p>
+          </Card.Content>
+        </Card>
+      ) : filteredFavorites.length === 0 && searchQuery ? (
+        <Card>
+          <Card.Content className="text-center py-12">
+            <Search className="w-10 h-10 text-muted mx-auto mb-3 opacity-30" />
+            <p className="text-muted text-sm">
+              No favorites found matching "{searchQuery}"
             </p>
           </Card.Content>
         </Card>

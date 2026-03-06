@@ -1,6 +1,15 @@
 import { useState, useCallback, useMemo } from "react";
 import { useStore, useHydrated, type ServerResult } from "../store";
-import { Button, Card, Chip, Pagination } from "@heroui/react";
+import {
+  Button,
+  Card,
+  Chip,
+  Pagination,
+  SearchField,
+  Select,
+  Label,
+  ListBox,
+} from "@heroui/react";
 import {
   History as HistoryIcon,
   RefreshCw,
@@ -9,11 +18,15 @@ import {
   Heart,
   Wifi,
   WifiOff,
+  Search,
 } from "lucide-react";
 import { useNavigate } from "react-router";
 import { ServerCardSkeleton } from "../components/server-card";
+import type { Key } from "react-aria-components";
 
 const PAGE_SIZE = 12;
+
+type SortOption = "newest" | "oldest" | "players-desc" | "players-asc";
 
 export function meta() {
   return [
@@ -47,8 +60,42 @@ export default function History() {
   >({});
   const [isRefreshingAll, setIsRefreshingAll] = useState(false);
   const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<Key>("newest");
 
-  const onlineHistory = recentScans.filter((s) => s.online);
+  const onlineHistory = useMemo(() => {
+    let filtered = recentScans.filter((s) => s.online);
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (s) =>
+          s.ip.toLowerCase().includes(q) ||
+          s.port.toString().includes(q) ||
+          (s.motd && stripMinecraftCodes(s.motd).toLowerCase().includes(q)),
+      );
+    }
+
+    return filtered.sort((a, b) => {
+      switch (sortOrder) {
+        case "newest":
+          return (
+            new Date(b.scannedAt).getTime() - new Date(a.scannedAt).getTime()
+          );
+        case "oldest":
+          return (
+            new Date(a.scannedAt).getTime() - new Date(b.scannedAt).getTime()
+          );
+        case "players-desc":
+          return (b.playersOnline || 0) - (a.playersOnline || 0);
+        case "players-asc":
+          return (a.playersOnline || 0) - (b.playersOnline || 0);
+        default:
+          return 0;
+      }
+    });
+  }, [recentScans, searchQuery, sortOrder]);
+
   const totalPages = Math.max(1, Math.ceil(onlineHistory.length / PAGE_SIZE));
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
 
@@ -192,13 +239,69 @@ export default function History() {
         </div>
       </div>
 
-      {onlineHistory.length === 0 ? (
+      <div className="flex flex-col sm:flex-row gap-4 items-center mb-6">
+        <SearchField
+          className="w-full sm:w-80"
+          value={searchQuery}
+          onChange={(val) => {
+            setSearchQuery(val);
+            setPage(1); // Reset to page 1 on search
+          }}
+          aria-label="Search servers"
+        >
+          <SearchField.Group>
+            <SearchField.SearchIcon>
+              <Search className="w-4 h-4" />
+            </SearchField.SearchIcon>
+            <SearchField.Input placeholder="Search IP, motd..." />
+            <SearchField.ClearButton />
+          </SearchField.Group>
+        </SearchField>
+
+        <Select
+          className="w-full sm:w-48 ml-auto"
+          aria-label="Sort by"
+          selectedKey={sortOrder}
+          onSelectionChange={(key) => setSortOrder(key || "newest")}
+        >
+          <Select.Trigger>
+            <Select.Value />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              <ListBox.Item id="newest" textValue="Newest">
+                Newest Scans
+              </ListBox.Item>
+              <ListBox.Item id="oldest" textValue="Oldest">
+                Oldest Scans
+              </ListBox.Item>
+              <ListBox.Item id="players-desc" textValue="Most Players">
+                Most Players
+              </ListBox.Item>
+              <ListBox.Item id="players-asc" textValue="Least Players">
+                Least Players
+              </ListBox.Item>
+            </ListBox>
+          </Select.Popover>
+        </Select>
+      </div>
+
+      {onlineHistory.length === 0 && !searchQuery ? (
         <Card>
           <Card.Content className="text-center py-12">
             <HistoryIcon className="w-10 h-10 text-muted mx-auto mb-3 opacity-30" />
             <p className="text-muted text-sm">
               No scan history yet. Go to the Home page and scan some servers to
               start building your history.
+            </p>
+          </Card.Content>
+        </Card>
+      ) : onlineHistory.length === 0 && searchQuery ? (
+        <Card>
+          <Card.Content className="text-center py-12">
+            <Search className="w-10 h-10 text-muted mx-auto mb-3 opacity-30" />
+            <p className="text-muted text-sm">
+              No servers found matching "{searchQuery}"
             </p>
           </Card.Content>
         </Card>
@@ -217,7 +320,7 @@ export default function History() {
                 <Card key={key} className="cursor-pointer">
                   <div
                     onClick={() =>
-                      navigate(`?server=${server.ip}:${server.port}`)
+                      navigate(`/?server=${server.ip}:${server.port}`)
                     }
                     className="space-y-3"
                   >

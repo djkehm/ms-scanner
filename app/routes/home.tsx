@@ -10,6 +10,9 @@ import {
   Tabs,
   Spinner,
   Pagination,
+  SearchField,
+  Select,
+  ListBox,
 } from "@heroui/react";
 import {
   Search,
@@ -21,6 +24,7 @@ import {
 } from "lucide-react";
 import { useStore, useHydrated, type ServerResult } from "../store";
 import ServerCard, { ServerCardSkeleton } from "../components/server-card";
+import type { Key } from "react-aria-components";
 
 export function meta({ location }: { location: any }) {
   const searchParams = new URLSearchParams(location.search);
@@ -143,6 +147,12 @@ export default function Home() {
     [],
   );
   const [historyPage, setHistoryPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<Key>("newest");
+  const [currentScanPage, setCurrentScanPage] = useState(1);
+  const [currentScanSearchQuery, setCurrentScanSearchQuery] = useState("");
+  const [currentScanSortOrder, setCurrentScanSortOrder] =
+    useState<Key>("newest");
 
   const { recentScans, addRecentScan, settings } = useStore();
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -200,13 +210,49 @@ export default function Home() {
     }
   }, [ip, portInput, serverType, addRecentScan]);
 
-  const onlineResults = useMemo(
-    () => scanResults.filter((s) => s.online),
-    [scanResults],
-  );
+  const onlineResults = useMemo(() => {
+    function stripMinecraftCodes(text: string): string {
+      return text.replace(/§[0-9a-fk-or]/gi, "");
+    }
+
+    let filtered = scanResults.filter((s) => s.online);
+
+    if (currentScanSearchQuery) {
+      const q = currentScanSearchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (s) =>
+          s.ip.toLowerCase().includes(q) ||
+          s.port.toString().includes(q) ||
+          (s.motd && stripMinecraftCodes(s.motd).toLowerCase().includes(q)),
+      );
+    }
+
+    return filtered.sort((a, b) => {
+      switch (currentScanSortOrder) {
+        case "newest":
+          return (
+            new Date(b.scannedAt).getTime() - new Date(a.scannedAt).getTime()
+          );
+        case "oldest":
+          return (
+            new Date(a.scannedAt).getTime() - new Date(b.scannedAt).getTime()
+          );
+        case "players-desc":
+          return (b.playersOnline || 0) - (a.playersOnline || 0);
+        case "players-asc":
+          return (a.playersOnline || 0) - (b.playersOnline || 0);
+        default:
+          return 0;
+      }
+    });
+  }, [scanResults, currentScanSearchQuery, currentScanSortOrder]);
 
   const recentExcludingCurrent = useMemo(() => {
-    return recentScans.filter(
+    function stripMinecraftCodes(text: string): string {
+      return text.replace(/§[0-9a-fk-or]/gi, "");
+    }
+
+    let filtered = recentScans.filter(
       (s) =>
         s.online &&
         !onlineResults.find(
@@ -214,7 +260,36 @@ export default function Home() {
             r.ip === s.ip && r.port === s.port && r.scannedAt === s.scannedAt,
         ),
     );
-  }, [recentScans, onlineResults]);
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (s) =>
+          s.ip.toLowerCase().includes(q) ||
+          s.port.toString().includes(q) ||
+          (s.motd && stripMinecraftCodes(s.motd).toLowerCase().includes(q)),
+      );
+    }
+
+    return filtered.sort((a, b) => {
+      switch (sortOrder) {
+        case "newest":
+          return (
+            new Date(b.scannedAt).getTime() - new Date(a.scannedAt).getTime()
+          );
+        case "oldest":
+          return (
+            new Date(a.scannedAt).getTime() - new Date(b.scannedAt).getTime()
+          );
+        case "players-desc":
+          return (b.playersOnline || 0) - (a.playersOnline || 0);
+        case "players-asc":
+          return (a.playersOnline || 0) - (b.playersOnline || 0);
+        default:
+          return 0;
+      }
+    });
+  }, [recentScans, onlineResults, searchQuery, sortOrder]);
 
   const stats = useMemo(() => {
     const onlineServers = recentScans.filter((s) => s.online);
@@ -476,36 +551,174 @@ export default function Home() {
 
       {isHydrated && (
         <>
-          {!isScanning && scanResults.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold border-b-2 border-accent pb-1">
-                  Current Scan Results
-                </h2>
-                <Chip color="accent" variant="soft" size="sm">
-                  {onlineResults.length} online / {scanResults.length} scanned
-                </Chip>
-              </div>
-              {onlineResults.length === 0 ? (
-                <Card variant="secondary">
-                  <Card.Content className="text-center py-8">
-                    <p className="text-muted text-sm">
-                      No online servers found on the scanned ports.
-                    </p>
-                  </Card.Content>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {onlineResults.map((server) => (
-                    <ServerCard
-                      key={`current-${server.ip}:${server.port}`}
-                      server={server}
-                    />
-                  ))}
+          {!isScanning &&
+            scanResults.length > 0 &&
+            (() => {
+              const CURRENT_SCAN_PAGE_SIZE = 12;
+              const currentScanTotalPages = Math.max(
+                1,
+                Math.ceil(onlineResults.length / CURRENT_SCAN_PAGE_SIZE),
+              );
+              const currentScanPages = Array.from(
+                { length: currentScanTotalPages },
+                (_, i) => i + 1,
+              );
+              const paginatedCurrentScans = onlineResults.slice(
+                (currentScanPage - 1) * CURRENT_SCAN_PAGE_SIZE,
+                currentScanPage * CURRENT_SCAN_PAGE_SIZE,
+              );
+              const cStart = (currentScanPage - 1) * CURRENT_SCAN_PAGE_SIZE + 1;
+              const cEnd = Math.min(
+                currentScanPage * CURRENT_SCAN_PAGE_SIZE,
+                onlineResults.length,
+              );
+
+              return (
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center justify-between sm:justify-start w-full gap-4">
+                        <h2 className="text-lg font-semibold border-b-2 border-accent pb-1">
+                          Current Scan Results
+                        </h2>
+                        <Chip color="accent" variant="soft" size="sm">
+                          {onlineResults.length} online / {scanResults.length}{" "}
+                          scanned
+                        </Chip>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-4 items-center w-full sm:w-auto mt-2 sm:mt-0">
+                        <SearchField
+                          className="w-full sm:w-64"
+                          value={currentScanSearchQuery}
+                          onChange={(val) => {
+                            setCurrentScanSearchQuery(val);
+                            setCurrentScanPage(1);
+                          }}
+                          aria-label="Search current results"
+                        >
+                          <SearchField.Group>
+                            <SearchField.SearchIcon>
+                              <Search className="w-4 h-4" />
+                            </SearchField.SearchIcon>
+                            <SearchField.Input placeholder="Search IP, motd..." />
+                            <SearchField.ClearButton />
+                          </SearchField.Group>
+                        </SearchField>
+
+                        <Select
+                          className="w-full sm:w-48"
+                          aria-label="Sort by"
+                          selectedKey={currentScanSortOrder}
+                          onSelectionChange={(key) =>
+                            setCurrentScanSortOrder(key || "newest")
+                          }
+                        >
+                          <Select.Trigger>
+                            <Select.Value />
+                          </Select.Trigger>
+                          <Select.Popover>
+                            <ListBox>
+                              <ListBox.Item id="newest" textValue="Newest">
+                                Newest
+                              </ListBox.Item>
+                              <ListBox.Item id="oldest" textValue="Oldest">
+                                Oldest
+                              </ListBox.Item>
+                              <ListBox.Item
+                                id="players-desc"
+                                textValue="Most Players"
+                              >
+                                Most Players
+                              </ListBox.Item>
+                              <ListBox.Item
+                                id="players-asc"
+                                textValue="Least Players"
+                              >
+                                Least Players
+                              </ListBox.Item>
+                            </ListBox>
+                          </Select.Popover>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {onlineResults.length === 0 && currentScanSearchQuery ? (
+                      <Card variant="secondary">
+                        <Card.Content className="text-center py-8">
+                          <Search className="w-8 h-8 text-muted mx-auto mb-2 opacity-30" />
+                          <p className="text-muted text-sm">
+                            No results matching "{currentScanSearchQuery}"
+                          </p>
+                        </Card.Content>
+                      </Card>
+                    ) : onlineResults.length === 0 ? (
+                      <Card variant="secondary">
+                        <Card.Content className="text-center py-8">
+                          <p className="text-muted text-sm">
+                            No online servers found on the scanned ports.
+                          </p>
+                        </Card.Content>
+                      </Card>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {paginatedCurrentScans.map((server) => (
+                          <ServerCard
+                            key={`current-${server.ip}:${server.port}`}
+                            server={server}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {currentScanTotalPages > 1 && (
+                    <Pagination size="sm">
+                      <Pagination.Summary>
+                        {cStart} to {cEnd} of {onlineResults.length} servers
+                      </Pagination.Summary>
+                      <Pagination.Content>
+                        <Pagination.Item>
+                          <Pagination.Previous
+                            isDisabled={currentScanPage === 1}
+                            onPress={() =>
+                              setCurrentScanPage((p) => Math.max(1, p - 1))
+                            }
+                          >
+                            <Pagination.PreviousIcon />
+                            Prev
+                          </Pagination.Previous>
+                        </Pagination.Item>
+                        {currentScanPages.map((p) => (
+                          <Pagination.Item key={p}>
+                            <Pagination.Link
+                              isActive={p === currentScanPage}
+                              onPress={() => setCurrentScanPage(p)}
+                            >
+                              {p}
+                            </Pagination.Link>
+                          </Pagination.Item>
+                        ))}
+                        <Pagination.Item>
+                          <Pagination.Next
+                            isDisabled={
+                              currentScanPage === currentScanTotalPages
+                            }
+                            onPress={() =>
+                              setCurrentScanPage((p) =>
+                                Math.min(currentScanTotalPages, p + 1),
+                              )
+                            }
+                          >
+                            Next
+                            <Pagination.NextIcon />
+                          </Pagination.Next>
+                        </Pagination.Item>
+                      </Pagination.Content>
+                    </Pagination>
+                  )}
                 </div>
-              )}
-            </div>
-          )}
+              );
+            })()}
 
           {recentExcludingCurrent.length > 0 &&
             (() => {
@@ -530,21 +743,93 @@ export default function Home() {
 
               return (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-muted">
-                      History
-                    </h2>
-                    <span className="text-xs text-muted">
-                      {recentExcludingCurrent.length} previous online servers
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 opacity-80">
-                    {paginatedHistory.map((server) => (
-                      <ServerCard
-                        key={`recent-${server.ip}:${server.port}:${server.scannedAt}`}
-                        server={server}
-                      />
-                    ))}
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <h2 className="text-lg font-semibold text-muted">
+                          History
+                        </h2>
+                        <span className="text-xs text-muted">
+                          {recentExcludingCurrent.length} previous online
+                          servers
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-4 items-center w-full sm:w-auto">
+                        <SearchField
+                          className="w-full sm:w-64"
+                          value={searchQuery}
+                          onChange={(val) => {
+                            setSearchQuery(val);
+                            setHistoryPage(1);
+                          }}
+                          aria-label="Search recent scans"
+                        >
+                          <SearchField.Group>
+                            <SearchField.SearchIcon>
+                              <Search className="w-4 h-4" />
+                            </SearchField.SearchIcon>
+                            <SearchField.Input placeholder="Search IP, motd..." />
+                            <SearchField.ClearButton />
+                          </SearchField.Group>
+                        </SearchField>
+
+                        <Select
+                          className="w-full sm:w-48"
+                          aria-label="Sort by"
+                          selectedKey={sortOrder}
+                          onSelectionChange={(key) =>
+                            setSortOrder(key || "newest")
+                          }
+                        >
+                          <Select.Trigger>
+                            <Select.Value />
+                          </Select.Trigger>
+                          <Select.Popover>
+                            <ListBox>
+                              <ListBox.Item id="newest" textValue="Newest">
+                                Newest
+                              </ListBox.Item>
+                              <ListBox.Item id="oldest" textValue="Oldest">
+                                Oldest
+                              </ListBox.Item>
+                              <ListBox.Item
+                                id="players-desc"
+                                textValue="Most Players"
+                              >
+                                Most Players
+                              </ListBox.Item>
+                              <ListBox.Item
+                                id="players-asc"
+                                textValue="Least Players"
+                              >
+                                Least Players
+                              </ListBox.Item>
+                            </ListBox>
+                          </Select.Popover>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {recentExcludingCurrent.length === 0 && searchQuery ? (
+                      <Card variant="secondary">
+                        <Card.Content className="text-center py-8">
+                          <Search className="w-8 h-8 text-muted mx-auto mb-2 opacity-30" />
+                          <p className="text-muted text-sm">
+                            No history matching "{searchQuery}"
+                          </p>
+                        </Card.Content>
+                      </Card>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 opacity-80">
+                        {paginatedHistory.map((server) => (
+                          <ServerCard
+                            key={`recent-${server.ip}:${server.port}:${server.scannedAt}`}
+                            server={server}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                   {totalHistoryPages > 1 && (
                     <Pagination size="sm">

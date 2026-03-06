@@ -13,8 +13,8 @@ function stripMinecraftCodes(text: string): string {
 
 export default function ServerCard({ server }: ServerCardProps) {
   const navigate = useNavigate();
-  const isFavorite = useStore((state) =>
-    state.favorites.some((f) => f.ip === server.ip && f.port === server.port),
+  const isFavorite = useStore(
+    (state) => !!state.favoritesKeys[`${server.ip}:${server.port}`],
   );
   const addFavorite = useStore((state) => state.addFavorite);
   const removeFavorite = useStore((state) => state.removeFavorite);
