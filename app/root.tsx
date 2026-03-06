@@ -36,6 +36,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta name="color-scheme" content="dark light" />
         <meta name="author" content="MS Scanner" />
         <meta name="robots" content="index, follow" />
+        <meta
+          name="google-site-verification"
+          content="2F3tijKpePAYwgNhVhSa00ok39gfQRd7Y6foE-XS59s"
+        />
+        <link rel="manifest" href="/manifest.json" />
 
         {/* Per-page meta (title, description) rendered here */}
         <Meta />

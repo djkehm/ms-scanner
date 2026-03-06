@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ms-scanner.vercel.app/sitemap.xml
